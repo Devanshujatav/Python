@@ -69,3 +69,21 @@ class Customer:
         self.isactive = 0
         db.log("deactivate" , "customer" , self.customer_id , self.full_name)
     
+    # -------------------------------------------------------------- #
+    #  Class-level finders                                             #
+    # -------------------------------------------------------------- #
+    @classmethod
+    def _from_row(cls , row):
+        return cls(
+            customer_id=row["customer_id"],
+            full_name=row["full_name"],
+            email=row["email"],
+            phone=row["phone"],
+            address=row["address"],
+            date_of_birth=row["date_of_birth"],
+            pin=row["pin_hash"],
+            created_at=row["created_at"],
+            is_active=row["is_active"]
+        )
+    
+    
