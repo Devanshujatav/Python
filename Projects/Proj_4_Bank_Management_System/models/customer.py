@@ -86,4 +86,32 @@ class Customer:
             is_active=row["is_active"]
         )
     
+    @classmethod
+    def find_by_id(cls , customer_id: str):
+        db = DatabaseManager()
+        with db.get_connection() as conn:
+            row = conn.execute("SELECT * FROM customers WHERE customer_id = ?", (customer_id,)).fetchone()
+            if row:
+                return cls._from_row(row)
+        return None
+
+    @classmethod
+    def find_by_email(cls , email: str):
+        db = DatabaseManager()
+        with db.get_connection() as conn:
+            row = conn.execute("SELECT * FROM customers WHERE email = ?", (email,)).fetchone()
+            if row:
+                return cls._from_row(row)
+        return None
+    
+    @classmethod
+    def all_active(cls):
+        db = DatabaseManager()
+        with db.get_connection() as conn:
+            rows = conn.execute("SELECT * FROM customers WHERE is_active = 1").fetchall()
+            return [cls._from_row(row) for row in rows]
+        
+    def __repr__(self):
+        return f"<Customer {self.customer_id} - {self.full_name}>"
+
     
