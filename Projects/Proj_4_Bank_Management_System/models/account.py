@@ -99,4 +99,43 @@ class Account:
         DatabaseManager().log_action("FREEZE" , "account" , self.account_number)
 
 
+    def close(self):
+        self.status = "closed"
+        self._update_db()
+        DatabaseManager().log_action("CLOSE" , "account" , self.account_number)
+
+    # -------------------------------------------------------------- #
+    #  DB helpers                                                      #
+    # -------------------------------------------------------------- #
+
+    def _save_transaction(self , txn_type: str , amount: float , description: str) -> dict:
+        """Save a transaction to the database."""
+        txn_id = f"TXN{uuid.uuid4().hex[:8].upper()}"
         
+        db = DatabaseManager()
+        with db.get_connection() as conn:
+            conn.execute("""
+                INSERT INTO transactions (transaction_id, account_number, txn_type, amount, balance_after ,  description, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (txn_id, self.account_number, txn_type, amount, self.balance,  description, datetime.now().isoformat()))
+
+        return {
+            "transaction_id": txn_id,
+            "account_number": self.account_number,
+            "type": txn_type,
+            "amount": amount,
+            "balance_after": self.balance,
+            "description": description,
+            "timestamp": datetime.now().isoformat()
+        }
+    
+
+    def _update_db(self):
+        """Update the account details in the database."""
+        db = DatabaseManager()
+        with db.get_connection() as conn:
+            conn.execute("""
+                UPDATE accounts SET balance = ?, status = ? WHERE account_number = ?
+            """, (self.balance, self.status, self.account_number))
+
+    
