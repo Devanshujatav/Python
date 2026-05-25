@@ -138,4 +138,28 @@ class Account:
                 UPDATE accounts SET balance = ?, status = ? WHERE account_number = ?
             """, (self.balance, self.status, self.account_number))
 
-    
+    # -------------------------------------------------------------- #
+    #  Class-level finders                                             #
+    # -------------------------------------------------------------- #
+
+    @classmethod
+    def _from_row(cls , row) -> "Account":
+        """Factory — returns the correct subclass based on account_type."""
+        mapping = {
+            "savings": SavingsAccount,
+            "checking": CheckingAccount,
+            "fixed_deposit": FixedDepositAccount
+        }
+
+        klass = mapping.get(row["account_type"], cls)
+
+        return klass(
+            customer_id=row["customer_id"],
+            balance=row["balance"],
+            account_number=row["account_number"],
+            status=row["status"],
+            intrest_rate=row["intrest_rate"],
+            created_at=row["created_at"]
+        )
+
+
