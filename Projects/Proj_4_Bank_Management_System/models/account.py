@@ -162,4 +162,15 @@ class Account:
             created_at=row["created_at"]
         )
 
+    @classmethod
+    def find_by_number(cls , account_number: str):
+        """Find an account by its number."""
+        db = DatabaseManager()
+        with db.get_connection() as conn:
+            row = conn.execute("""
+                SELECT * FROM accounts WHERE account_number = ?
+            """, (account_number,)).fetchone()
+
+        return cls._from_row(row) if row else None
+
 
