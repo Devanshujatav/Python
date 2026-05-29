@@ -173,4 +173,63 @@ class Account:
 
         return cls._from_row(row) if row else None
 
+    @classmethod
+    def find_by_customer(cls , customer_id: str) -> list:
+        """Find all accounts for a given customer."""
+        db = DatabaseManager()
+        with db.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT * FROM accounts WHERE customer_id = ? ORDER BY created_at 
+            """, (customer_id,)).fetchall()
 
+        return [cls._from_row(row) for row in rows]
+    
+
+    def __repr__(self):
+        return (
+            f"<{self.__class__.__name__} account_number={self.account_number} "
+            f"customer_id={self.customer_id} balance=₹{self.balance:.2f} status={self.status}>"
+        )
+    
+class SavingsAccount(Account):
+    ACCOUNT_TYPES = "savings"
+    DEFAULT_INTREST_RATE = 4.0
+    MIN_BALANCE = 500.0
+
+    def withdraw(self, amount: float , descripttion: str = "Withdrawal") -> dict:
+        """Withdraw money from the savings account."""
+        self._check_active()
+        self._check_amount(amount)
+        if self.balance - amount < self.MIN_BALANCE:
+            raise ValueError(f"Insufficient funds. Minimum balance of ₹{self.MIN_BALANCE} must be maintained.")
+        self.balance -= round(amount, 2)
+        txn = self._save_transaction("withdrawal" , amount , descripttion)
+        self._update_db()
+        return txn
+    
+
+class CheckingAccount(Account):
+    ACCOUNT_TYPES = "checking"
+    DEFAULT_INTREST_RATE = 0.0
+    MIN_BALANCE = -10000.0  # Overdraft allowed up to ₹10,000
+
+    def withdraw(self, amount: float , descripttion: str = "Withdrawal") -> dict:
+        """Withdraw money from the checking account."""
+        self._check_active()
+        self._check_amount(amount)
+        if self.balance - amount < self.MIN_BALANCE:
+            raise ValueError(f"Overdraft limit exceeded. You can overdraft up to ₹{-self.MIN_BALANCE}.")
+        self.balance -= round(amount, 2)
+        txn = self._save_transaction("withdrawal" , amount , descripttion)
+        self._update_db()
+        return txn
+    
+class FixedDepositAccount(Account):
+    ACCOUNT_TYPES = "fixed_deposit"
+    DEFAULT_INTREST_RATE = 7.5
+    MIN_BALANCE = 0.0
+
+    def withdraw(self, amount: float , descripttion: str = "Withdrawal") -> dict:
+        """Withdrawals are not allowed from fixed deposit accounts."""
+        raise PermissionError("Withdrawals are not allowed on Fixed Deposit accounts before maturity. "
+            "Please visit your branch to prematurely close the FD.")
