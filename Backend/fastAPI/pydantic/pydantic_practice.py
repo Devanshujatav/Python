@@ -60,7 +60,7 @@ try:
 except ValidationError as e:
     print("Caught error as expected:")
     print(e)
-    print(e.errors)
+    print(e.errors())
 
 
 # ==========================================================
@@ -113,4 +113,64 @@ except ValidationError as e:
     print("Constrained Error : ")
     print(e)
 
-    
+
+# ==========================================================
+# 6. CUSTOM FIELD VALIDATORS
+# ==========================================================
+section("6. CUSTOM FIELD VALIDATORS")
+
+class Account(BaseModel):
+    username : str
+    password : str
+
+    @field_validator("username")
+    @classmethod
+    def username_no_spaces(cls , value):
+        if " " in value:
+            raise ValueError("Username must not contain spaces")
+
+        return value.lower()
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls , value):
+        if (len(value) < 8):
+            raise ValueError("Password must be at least 8 characters")
+
+        return value
+
+
+acc = Account(username = "DJ" , password = "Devanshu@12345")
+print(acc)
+
+try:
+    Account(username = "D J" , password = "pass")
+except ValidationError as e:
+    print("Validation Error")
+    print(e)
+
+
+# ==========================================================
+# 7. MODEL VALIDATOR (cross-field validation)
+# ==========================================================
+section("7. MODEL VALIDATOR (cross-field)")
+
+class SignupForm(BaseModel):
+    password : str
+    confirm_password : str
+
+    @model_validator(mode = "after")
+    def password_match(self):
+        if self.password != self.confirm_password:
+            raise ValueError("Passwords do not match")
+
+        return self
+
+try:
+    SignupForm(password = "abc133" , confirm_password = "zrh133")
+except ValidationError as e:
+    print(e)
+
+good_form = SignupForm(password = "abc233" , confirm_password = "abc233")
+print("valid_form : " , good_form)
+
